@@ -16,16 +16,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Updated from v3
+        uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4 # Updated from v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'pnpm' # Changed from 'npm' to 'pnpm'
+          cache: 'pnpm'
       
+      # Moved Setup PNPM before Get PNPM store directory
       - name: Setup PNPM
-        uses: pnpm/action-setup@v3 # Updated from v2
+        uses: pnpm/action-setup@v3
         with:
           version: 8
           run_install: false
@@ -36,7 +37,7 @@ jobs:
           echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup PNPM cache
-        uses: actions/cache@v4 # Updated from v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -53,7 +54,7 @@ jobs:
         run: touch out/.nojekyll
       
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Updated from v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
 
@@ -69,4 +70,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Updated from v2
+        uses: actions/deploy-pages@v4
