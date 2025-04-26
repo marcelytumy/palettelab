@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4 # Updated from v3
         with:
           node-version: 18
-          cache: 'npm' # Changed from 'npm' to 'pnpm' as per setup-node v4 recommendations for pnpm
+          cache: 'pnpm' # Changed from 'npm' to 'pnpm'
       
       - name: Setup PNPM
         uses: pnpm/action-setup@v3 # Updated from v2
