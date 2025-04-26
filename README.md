@@ -20,10 +20,10 @@ First, run the development server:
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Run development server
-pnpm dev
+npm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -47,10 +47,10 @@ You can also deploy manually:
 
 ```bash
 # Build the project
-pnpm build
+npm build
 
 # Deploy to GitHub Pages
-pnpm deploy
+npm deploy
 ```
 
 The app will be available at `https://[your-username].github.io/palettelab`
