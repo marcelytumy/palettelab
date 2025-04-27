@@ -126,11 +126,68 @@ export default function Home() {
   // Use the custom hook to manage palette generation logic and state
   const { palette, textColors, loading, generatePaletteWithType } = usePaletteGenerator();
 
-  // Effect to generate a random palette on initial component mount
+  // Parse URL hash on initial load to get shared palette details
   useEffect(() => {
-    handleRandomColor();
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash) {
+        // Remove the # symbol and split by /
+        const parts = hash.substring(1).split('/');
+        if (parts.length >= 1) {
+          const colorHex = parts[0];
+          // Validate the hex color
+          if (isValidHexColor(colorHex)) {
+            const standardizedHex = standardizeHexColor(colorHex);
+            setInputColor(standardizedHex);
+            setIsValidInput(true);
+            
+            // Get palette type if available
+            if (parts.length >= 2) {
+              const type = parts[1] as PaletteType;
+              // Ensure it's a valid palette type
+              const validTypes: PaletteType[] = ['monochromatic', 'analogous', 'complementary', 'triadic', 'tetradic', 'split-complementary'];
+              if (validTypes.includes(type)) {
+                setPaletteType(type);
+              }
+            }
+            
+            // Generate the palette after a short delay to ensure state is updated
+            setTimeout(() => {
+              generatePaletteWithType(standardizedHex, parts.length >= 2 ? parts[1] as PaletteType : 'monochromatic')
+                .then(colors => {
+                  setCopiedStates(new Array(colors.length).fill(false));
+                })
+                .catch(error => {
+                  console.error("Error generating palette from URL:", error);
+                  // If there's an error, fall back to random palette
+                  handleRandomColor();
+                });
+            }, 100);
+          } else {
+            // If invalid hex in URL, use default random palette
+            handleRandomColor();
+          }
+        } else {
+          // If no useful data in hash, use default random palette
+          handleRandomColor();
+        }
+      } else {
+        // No hash, generate a random palette
+        handleRandomColor();
+      }
+    }
     // Empty dependency array ensures this runs only once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Update the URL hash with the current color and palette type for sharing.
+   */
+  const updateUrlHash = useCallback((color: string, type: PaletteType) => {
+    if (typeof window !== 'undefined') {
+      const standardizedColor = standardizeHexColor(color);
+      window.location.hash = `${standardizedColor.substring(1)}/${type}`;
+    }
   }, []);
 
   /**
@@ -172,6 +229,8 @@ export default function Home() {
         .then(colors => {
           // Reset copied states for the new palette
           setCopiedStates(new Array(colors.length).fill(false));
+          // Update URL hash for sharing
+          updateUrlHash(inputColor, paletteType);
         })
         .catch(error => {
           // Show error notification if generation fails
@@ -182,7 +241,7 @@ export default function Home() {
       // Show error notification if the input color is invalid
       toast.error("Please enter a valid hex color code");
     }
-  }, [generatePaletteWithType, inputColor, isValidInput, paletteType]);
+  }, [generatePaletteWithType, inputColor, isValidInput, paletteType, updateUrlHash]);
 
   /**
    * Generates a random hex color, updates the input state,
@@ -207,6 +266,8 @@ export default function Home() {
       .then(colors => {
         // Reset copied states for the new palette
         setCopiedStates(new Array(colors.length).fill(false));
+        // Update URL hash for sharing
+        updateUrlHash(newColor, paletteType);
       })
       .catch(error => {
         // Show error notification if generation fails (less likely with random)
@@ -214,7 +275,7 @@ export default function Home() {
         console.error("Random palette generation error:", error); // Log error
       });
     // Dependencies ensure the function is recreated if necessary
-  }, [generatePaletteWithType, paletteType]);
+  }, [generatePaletteWithType, paletteType, updateUrlHash]);
 
   /**
    * Copies the given color hex code to the clipboard and provides user feedback.
@@ -340,6 +401,28 @@ export default function Home() {
           >
               <span>Generate</span>
           </Button>
+
+          {/* Share Button - only shown when a palette exists */}
+          {palette.length > 0 && (
+            <Button
+              onClick={() => {
+                const url = `${window.location.origin}${window.location.pathname}#${inputColor.substring(1)}/${paletteType}`;
+                navigator.clipboard.writeText(url)
+                  .then(() => {
+                    toast.success("Share URL copied to clipboard!");
+                  })
+                  .catch((err) => {
+                    toast.error("Failed to copy share URL");
+                    console.error("Clipboard copy error:", err);
+                  });
+              }}
+              size="sm"
+              variant="outline"
+              className="h-8 px-3"
+            >
+              <span>Share</span>
+            </Button>
+          )}
         </div>
 
 
