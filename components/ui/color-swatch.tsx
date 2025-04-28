@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Minus } from "lucide-react";
 
 interface ColorSwatchProps {
   color: string;
@@ -7,6 +7,8 @@ interface ColorSwatchProps {
   isCopied: boolean;
   onClick: () => void;
   colorFormatted: string;
+  onRemove?: () => void;
+  canRemove?: boolean;
 }
 
 export const ColorSwatch = React.memo(({
@@ -14,14 +16,35 @@ export const ColorSwatch = React.memo(({
   textColor,
   isCopied,
   onClick,
-  colorFormatted
+  colorFormatted,
+  onRemove,
+  canRemove = true
 }: ColorSwatchProps) => {
+  // Stop propagation so remove button doesn't trigger the copy action
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onRemove) {
+      onRemove();
+    }
+  };
+
   return (
     <div
       className="group relative aspect-square w-full cursor-pointer transition-all duration-200"
       style={{ backgroundColor: color }}
       onClick={onClick}
     >
+      {/* Minus button in top-right corner */}
+      {onRemove && canRemove && (
+        <button 
+          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/30 hover:bg-black/50 rounded-full p-0.5"
+          onClick={handleRemoveClick}
+          aria-label="Remove swatch"
+        >
+          <Minus className="size-3" style={{ color: textColor }} />
+        </button>
+      )}
+
       {/* Overlay shown on hover, containing color code and copy icon */}
       <div
         className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20"

@@ -66,11 +66,12 @@ export function usePaletteGenerator() {
    */
   const generatePaletteAsync = useCallback(async (
     baseColor: string,
-    type: PaletteType
+    type: PaletteType,
+    swatchCount: number = 5
   ): Promise<string[]> => {
     // Introduce a minimal delay to ensure asynchronous behavior for loading state updates
     await new Promise(resolve => setTimeout(resolve, 0));
-    return generatePalette(baseColor, type);
+    return generatePalette(baseColor, type, swatchCount);
   }, []);
 
   /**
@@ -82,10 +83,11 @@ export function usePaletteGenerator() {
    */
   const generatePaletteWithType = useCallback(async (
     baseColor: string,
-    type: PaletteType
+    type: PaletteType,
+    swatchCount: number = 5
   ) => {
-    // Create a unique key for caching based on input color and palette type
-    const cacheKey = `${baseColor}-${type}`;
+    // Create a unique key for caching based on input color, palette type, and swatch count
+    const cacheKey = `${baseColor}-${type}-${swatchCount}`;
 
     // Check if the result is already in the cache
     if (cachedResults.has(cacheKey)) {
@@ -101,7 +103,7 @@ export function usePaletteGenerator() {
       dispatch({ type: 'SET_LOADING', payload: true });
 
       // Generate the palette colors asynchronously
-      const colors = await generatePaletteAsync(baseColor, type);
+      const colors = await generatePaletteAsync(baseColor, type, swatchCount);
 
       // Calculate the appropriate text color (black or white) for each palette color
       const textColors = colors.map(color => getContrastColor(color));

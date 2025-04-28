@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { usePaletteGenerator } from "@/hooks/use-palette-generator";
 import { PaletteControls } from "@/components/ui/palette-controls";
 import { ColorSwatch } from "@/components/ui/color-swatch";
+import { AddSwatchButton } from "@/components/ui/add-swatch-button";
 import { debounce } from 'lodash';
 import ColorPicker from "@/components/ui/color-picker";
 import { Footer } from "@/components/ui/footer";
@@ -26,11 +27,12 @@ export default function Home() {
     inputColor: "#3b82f6",
     isValidInput: true,
     paletteType: 'monochromatic' as PaletteType,
-    colorFormat: 'hex' as ColorFormat
+    colorFormat: 'hex' as ColorFormat,
+    swatchCount: 5
   });
 
   // Extract values from combined state for easier access
-  const { inputColor, isValidInput, paletteType, colorFormat } = colorState;
+  const { inputColor, isValidInput, paletteType, colorFormat, swatchCount } = colorState;
 
   // State for copied states
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
@@ -97,7 +99,7 @@ export default function Home() {
                 ? parts[1] as PaletteType
                 : 'monochromatic';
                 
-              generatePaletteWithType(standardizedHex, type)
+              generatePaletteWithType(standardizedHex, type, swatchCount)
                 .then(colors => {
                   setCopiedStates(new Array(colors.length).fill(false));
                 })
@@ -177,12 +179,100 @@ export default function Home() {
   }, []);
 
   /**
+   * Handles removing a swatch at a specific index
+  **/
+  const handleRemoveSwatch = useCallback((index: number) => {
+    if (swatchCount <= 3) {
+      toast.error("Cannot remove swatch. Minimum of 3 swatches required.");
+      return;
+    }
+    
+    // Update the swatch count
+    const newCount = swatchCount - 1;
+    setColorState(prev => ({
+      ...prev,
+      swatchCount: newCount
+    }));
+
+    // Regenerate the palette
+    if (isValidInput) {
+      generatePaletteWithType(inputColor, paletteType, newCount)
+        .then(colors => {
+          setCopiedStates(new Array(colors.length).fill(false));
+          updateUrlHash(inputColor, paletteType);
+        })
+        .catch((error) => {
+          console.error("Failed to regenerate palette after removing swatch:", error);
+          toast.error("Failed to update palette");
+        });
+    }
+  }, [generatePaletteWithType, inputColor, isValidInput, paletteType, swatchCount, updateUrlHash]);
+
+  /**
+   * Handles adding a swatch after a specific index or at the end
+   * If index is provided, adds between swatches
+   * If index is not provided, adds at the end
+  **/
+  const handleAddSwatch = useCallback((afterIndex?: number) => {
+    if (swatchCount >= 10) {
+      toast.error("Cannot add swatch. Maximum of 10 swatches allowed.");
+      return;
+    }
+    
+    // Update the swatch count
+    const newCount = swatchCount + 1;
+    setColorState(prev => ({
+      ...prev,
+      swatchCount: newCount
+    }));
+
+    // Regenerate the palette
+    if (isValidInput) {
+      generatePaletteWithType(inputColor, paletteType, newCount)
+        .then(colors => {
+          setCopiedStates(new Array(colors.length).fill(false));
+          updateUrlHash(inputColor, paletteType);
+          
+          if (afterIndex !== undefined) {
+            toast.success("Added swatch between colors");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to regenerate palette after adding swatch:", error);
+          toast.error("Failed to update palette");
+        });
+    }
+  }, [generatePaletteWithType, inputColor, isValidInput, paletteType, swatchCount, updateUrlHash]);
+
+  /**
+   * Handles changes to the swatch count
+  **/
+  const handleSwatchCountChange = useCallback((count: number) => {
+    setColorState(prev => ({
+      ...prev,
+      swatchCount: count
+    }));
+    // Generate a new palette immediately with the new swatch count
+    if (isValidInput) {
+      generatePaletteWithType(inputColor, paletteType, count)
+        .then(colors => {
+          setCopiedStates(new Array(colors.length).fill(false));
+          updateUrlHash(inputColor, paletteType);
+        })
+        .catch((error) => {
+          console.error("Failed to regenerate palette with new swatch count:", error);
+          toast.error("Failed to adjust palette size");
+        });
+    }
+  }, [generatePaletteWithType, inputColor, isValidInput, paletteType, updateUrlHash]);
+
+  /**
    * Debounced palette generation
    */
   const debouncedGeneratePalette = useMemo(() => debounce(
     async (color: string, type: PaletteType) => {
       try {
-        const colors = await generatePaletteWithType(color, type);
+        const colors = await generatePaletteWithType(color, type, swatchCount);
         setCopiedStates(new Array(colors.length).fill(false));
         updateUrlHash(color, type);
       } catch (error) {
@@ -190,7 +280,7 @@ export default function Home() {
       }
     }, 
     300
-  ), [generatePaletteWithType, updateUrlHash]);
+  ), [generatePaletteWithType, updateUrlHash, swatchCount]);
 
   /**
    * Triggers the palette generation process
@@ -219,7 +309,7 @@ export default function Home() {
       isValidInput: true
     }));
 
-    generatePaletteWithType(newColor, paletteType)
+    generatePaletteWithType(newColor, paletteType, swatchCount)
       .then(colors => {
         setCopiedStates(new Array(colors.length).fill(false));
         updateUrlHash(newColor, paletteType);
@@ -227,7 +317,7 @@ export default function Home() {
       .catch(() => {
         toast.error("Failed to generate palette with random color.");
       });
-  }, [generatePaletteWithType, paletteType, updateUrlHash]);
+  }, [generatePaletteWithType, paletteType, swatchCount, updateUrlHash]);
 
   /**
    * Copies the given color to the clipboard and provides user feedback.
@@ -297,6 +387,7 @@ export default function Home() {
           colorFormat={colorFormat}
           loading={loading}
           showShareButton={palette.length > 0}
+          swatchCount={swatchCount}
           handleColorWheelChange={handleColorWheelChange}
           handleInputChange={handleInputChange}
           handlePaletteTypeChange={handlePaletteTypeChange}
@@ -304,23 +395,40 @@ export default function Home() {
           handleRandomColor={handleRandomColor}
           handleShareClick={handleShareClick}
           setColorFormat={setColorFormat}
+          handleSwatchCountChange={handleSwatchCountChange}
           ColorPicker={ColorPicker}
         />
 
         {/* Palette display section - only shown if a palette exists */}
         {palette.length > 0 && (
           <div className="space-y-8">
-            {/* Grid layout for color swatches */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-1">
+            {/* Fixed grid layout for color swatches */}
+            <div className="grid grid-cols-5 gap-1 relative">
               {palette.map((color, index) => (
-                <ColorSwatch
-                  key={color + index}
-                  color={color}
-                  textColor={textColors[index]}
-                  isCopied={copiedStates[index]}
-                  onClick={() => copyToClipboard(color, index)}
-                  colorFormatted={formattedColorValues[index]}
+                <React.Fragment key={color + index}>
+                  <ColorSwatch
+                    color={color}
+                    textColor={textColors[index]}
+                    isCopied={copiedStates[index]}
+                    onClick={() => copyToClipboard(color, index)}
+                    colorFormatted={formattedColorValues[index]}
+                    onRemove={() => handleRemoveSwatch(index)}
+                    canRemove={palette.length > 3}
+                  />
+                </React.Fragment>
+              ))}
+              
+              {/* Add swatch button at the end if we have room for more swatches */}
+              {palette.length < 10 && (
+                <AddSwatchButton 
+                  position="end"
+                  onClick={() => handleAddSwatch()}
                 />
+              )}
+              
+              {/* Fill remaining grid spaces with empty cells to maintain layout */}
+              {[...Array(Math.max(0, 9 - palette.length - (palette.length < 9 ? 1 : 0)))].map((_, index) => (
+                <div key={`empty-${index}`} className="aspect-square" />
               ))}
             </div>
 
