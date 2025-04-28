@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PageLoading from "@/components/page-loading";
 import { ThemeProvider } from "@/components/theme-provider";
+import HeyThere from "@/components/ui/hey-there";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <HeyThere />
         {/* Wrap the application with the ThemeProvider */}
         <ThemeProvider
             attribute="class" // Use class-based theme switching (adds 'light' or 'dark' to html tag)

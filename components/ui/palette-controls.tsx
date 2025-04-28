@@ -53,7 +53,6 @@ const usePaletteControls = () => {
 
 // Completely separate memoized button components that use the context
 const GenerateButton = React.memo(() => {
-  console.log("GenerateButton render");
   const { handleGeneratePalette, isValidInput, loading } = usePaletteControls();
   
   return (
@@ -70,7 +69,6 @@ const GenerateButton = React.memo(() => {
 });
 
 const RandomColorButton = React.memo(() => {
-  console.log("RandomColorButton render");
   const { handleRandomColor, loading } = usePaletteControls();
   
   return (
@@ -87,7 +85,6 @@ const RandomColorButton = React.memo(() => {
 });
 
 const ShareButton = React.memo(() => {
-  console.log("ShareButton render");
   const { handleShareClick } = usePaletteControls();
   
   if (!handleShareClick) return null;
@@ -106,7 +103,6 @@ const ShareButton = React.memo(() => {
 
 // Memoized palette type selector using context
 const PaletteTypeSelector = React.memo(() => {
-  console.log("PaletteTypeSelector render");
   const { paletteType, loading, handlePaletteTypeChange } = usePaletteControls();
   
   // Define the available palette types for the Select dropdown
@@ -183,7 +179,6 @@ export const PaletteControls = React.memo(({
   setColorFormat,
   ColorPicker
 }: PaletteControlsProps) => {
-  console.log("PaletteControls render");
   
   // The context value - these functions won't change references
   const contextValue = useMemo(() => ({
